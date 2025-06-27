@@ -45,6 +45,9 @@ use App\Http\Controllers\User\DashboardController as UserDashboardController;
         Route::get('/users/add-saldo', [App\Http\Controllers\Admin\UserController::class, 'addSaldo'])->name('admin.users.add-saldo');
         Route::post('/users/add-saldo', [App\Http\Controllers\Admin\UserController::class, 'addSaldoProcess'])->name('admin.users.add-saldo.process');
         Route::post('/users/add-saldo/import', [App\Http\Controllers\Admin\UserController::class, 'importSaldo'])->name('admin.users.add-saldo.import');
+        Route::get('/users/min-saldo', [App\Http\Controllers\Admin\UserController::class, 'minSaldo'])->name('admin.users.min-saldo');
+        Route::post('/users/min-saldo', [App\Http\Controllers\Admin\UserController::class, 'minSaldoProcess'])->name('admin.users.min-saldo.process');
+        Route::post('/users/min-saldo/import', [App\Http\Controllers\Admin\UserController::class, 'importminSaldo'])->name('admin.users.min-saldo.import');
         Route::post('/admin/users/import', [\App\Http\Controllers\Admin\UserController::class, 'import'])->name('admin.users.import');
         Route::delete('/users/{id}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('admin.users.destroy');
         // Add other admin routes here

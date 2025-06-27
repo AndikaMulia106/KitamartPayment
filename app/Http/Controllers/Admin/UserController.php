@@ -58,42 +58,6 @@ class UserController extends Controller
         return redirect()->route('admin.users')->with('success', 'User berhasil dihapus!');
     }
 
-    public function addSaldo()
-    {
-        $users = \App\Models\User::orderBy('name')->get();
-        return view('admin.users-add-saldo', compact('users'));
-    }
-
-    public function addSaldoProcess(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'amount' => 'required|numeric|min:1',
-            'description' => 'nullable|string|max:255',
-        ]);
-
-        $user = \App\Models\User::findOrFail($request->user_id);
-        $user->balance += $request->amount;
-        $user->save();
-
-        // Catat transaksi untuk user
-        \App\Models\Transaction::create([
-            'user_id' => $user->id,
-            'amount' => $request->amount,
-            'type' => 'credit',
-            'description' => $request->description ?? 'Penambahan saldo oleh admin',
-        ]);
-
-        // Catat transaksi untuk admin (opsional, jika ingin tahu siapa adminnya)
-        \App\Models\Transaction::create([
-            'user_id' => auth()->id(),
-            'amount' => $request->amount,
-            'type' => 'credit',
-            'description' => 'Menambah saldo ke user: ' . $user->name . ' (' . $user->email . ')',
-        ]);
-
-        return redirect()->route('admin.users')->with('success', 'Saldo berhasil ditambahkan!');
-    }
     public function import(Request $request)
     {
         $request->validate([
@@ -149,6 +113,36 @@ class UserController extends Controller
 
         return redirect()->route('admin.users')->with('success', 'Import user berhasil!');
     }
+
+    public function addSaldo()
+    {
+        $users = \App\Models\User::orderBy('name')->get();
+        return view('admin.users-add-saldo', compact('users'));
+    }
+    
+    public function addSaldoProcess(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'amount' => 'required|numeric|min:1',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $user = \App\Models\User::findOrFail($request->user_id);
+        $user->balance += $request->amount;
+        $user->save();
+
+        // Catat transaksi untuk user
+        \App\Models\Transaction::create([
+            'user_id' => $user->id,
+            'amount' => $request->amount,
+            'type' => 'credit',
+            'description' => $request->description ?? 'Penambahan saldo oleh admin',
+        ]);
+
+        return redirect()->route('admin.users')->with('success', 'Saldo berhasil ditambahkan!');
+    }
+    
     public function importSaldo(Request $request)
     {
         $request->validate([
@@ -159,7 +153,7 @@ class UserController extends Controller
         $data = \Maatwebsite\Excel\Facades\Excel::toArray([], $file);
 
         $rows = $data[0];
-        unset($rows[0]); // hapus header
+        unset($rows[0]);
 
         $skipped = [];
         $updated = 0;
@@ -194,5 +188,81 @@ class UserController extends Controller
             return back()->with('warning', $msg);
         }
         return back()->with('success', 'Tambah saldo massal berhasil!');
+    }
+    
+    public function minSaldo()
+    {
+        $users = \App\Models\User::orderBy('name')->get();
+        return view('admin.users-min-saldo', compact('users'));
+    }
+
+    public function minSaldoProcess(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'amount' => 'required|numeric|min:1',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $user = \App\Models\User::findOrFail($request->user_id);
+        $user->balance -= $request->amount;
+        $user->save();
+
+        // Catat transaksi untuk user
+        \App\Models\Transaction::create([
+            'user_id' => $user->id,
+            'amount' => $request->amount,
+            'type' => 'debit',
+            'description' => $request->description ?? 'Pengurangan saldo oleh admin',
+        ]);
+
+        return redirect()->route('admin.users')->with('success', 'Saldo berhasil dikurangi!');
+    }
+    
+    public function importminSaldo(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls'
+        ]);
+
+        $file = $request->file('file');
+        $data = \Maatwebsite\Excel\Facades\Excel::toArray([], $file);
+
+        $rows = $data[0];
+        unset($rows[0]);
+
+        $skipped = [];
+        $updated = 0;
+
+        foreach ($rows as $row) {
+            $email = $row[0] ?? null;
+            $amount = $row[1] ?? 0;
+
+            $user = \App\Models\User::where('email', $email)->first();
+            if (!$user) {
+                $skipped[] = $email;
+                continue;
+            }
+
+            $user->balance -= $amount;
+            $user->save();
+
+            // Catat transaksi
+            \App\Models\Transaction::create([
+                'user_id' => $user->id,
+                'amount' => $amount,
+                'type' => 'debit',
+                'description' => 'Kurangi saldo massal via import',
+            ]);
+
+            $updated++;
+        }
+
+        $msg = "$updated user saldo berhasil dikurangi.";
+        if (count($skipped) > 0) {
+            $msg .= ' Email berikut tidak ditemukan: ' . implode(', ', $skipped);
+            return back()->with('warning', $msg);
+        }
+        return back()->with('success', 'Kurangi saldo massal berhasil!');
     }
 }

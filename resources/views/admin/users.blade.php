@@ -20,9 +20,11 @@
             </div>
         @endif
 
+        <!-- Add User/Saldo -->
         <div class="flex gap-4 mb-6">
             <a href="{{ route('admin.users.create') }}" class="bg-yellow-400 hover:bg-yellow-300 text-red-800 font-bold py-2 px-4 rounded transition">Tambah User</a>
             <a href="{{ route('admin.users.add-saldo') }}" class="bg-yellow-400 hover:bg-yellow-300 text-red-800 font-bold py-2 px-4 rounded transition">Tambah Saldo User</a>
+            <a href="{{ route('admin.users.min-saldo') }}" class="bg-yellow-400 hover:bg-yellow-300 text-red-800 font-bold py-2 px-4 rounded transition">Kurangi Saldo User</a>
         </div>
 
         <!-- Tabel User -->
